@@ -16,9 +16,6 @@ namespace MySaaSBackend
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Obtém a porta do Heroku (ou usa 8080 como fallback)
-            var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-
             // Obtém a variável de ambiente DATABASE_URL e converte para o formato correto
             var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
             if (!string.IsNullOrEmpty(databaseUrl))
@@ -43,9 +40,13 @@ namespace MySaaSBackend
 
             var app = builder.Build();
 
+            var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+
             app.Urls.Add($"http://*:{port}");
 
-            // Configuração do pipeline de requisições HTTP
+            // Adiciona uma rota de teste para verificar se está rodando
+            app.MapGet("/", () => "Backend rodando no Heroku!");
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
