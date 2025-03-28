@@ -18,8 +18,10 @@ namespace MySaaSBackend
             builder.Services.AddSwaggerGen();
 
             // Add DbContext service
+            string databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+                options.UseNpgsql(builder.Configuration.GetConnectionString(databaseUrl)));
 
             var app = builder.Build();
 
