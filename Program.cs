@@ -40,11 +40,6 @@ namespace MySaaSBackend
 
             var app = builder.Build();
 
-            var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-
-            app.Urls.Add($"http://*:{port}");
-
-            // Adiciona uma rota de teste para verificar se está rodando
             app.MapGet("/", () => "Backend rodando no Heroku!");
 
             if (app.Environment.IsDevelopment())
