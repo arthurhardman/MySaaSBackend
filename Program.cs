@@ -1,6 +1,7 @@
-
 using Microsoft.EntityFrameworkCore;
 using MySaaSBackend.Context;
+using Npgsql;
+using System;
 
 namespace MySaaSBackend
 {
@@ -10,22 +11,41 @@ namespace MySaaSBackend
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            // Adiciona serviços ao container.
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Add DbContext service
-            string databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+            // Obtém a porta do Heroku (ou usa 8080 como fallback)
+            var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString(databaseUrl)));
+            // Obtém a variável de ambiente DATABASE_URL e converte para o formato correto
+            var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+            if (!string.IsNullOrEmpty(databaseUrl))
+            {
+                var databaseUri = new Uri(databaseUrl);
+                var userInfo = databaseUri.UserInfo.Split(':');
+
+                var connectionString = new NpgsqlConnectionStringBuilder
+                {
+                    Host = databaseUri.Host,
+                    Port = databaseUri.Port,
+                    Username = userInfo[0],
+                    Password = userInfo[1],
+                    Database = databaseUri.AbsolutePath.TrimStart('/'),
+                    SslMode = SslMode.Require,
+                    TrustServerCertificate = true
+                }.ToString();
+
+                builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                    options.UseNpgsql(connectionString));
+            }
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            app.Urls.Add($"http://*:{port}");
+
+            // Configuração do pipeline de requisições HTTP
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -33,9 +53,7 @@ namespace MySaaSBackend
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
             app.MapControllers();
 
             app.Run();
